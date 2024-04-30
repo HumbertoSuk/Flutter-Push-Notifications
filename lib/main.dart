@@ -4,7 +4,10 @@ import 'package:flutter_push_notification/config/routers/routers.dart';
 import 'package:flutter_push_notification/config/theme/theme.dart';
 import 'package:flutter_push_notification/presentation/notification/notifications_bloc.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationsBloc
+      .initializeFCM(); // Esperar a que se inicialice Firebase
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(
