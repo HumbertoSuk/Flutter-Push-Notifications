@@ -9,9 +9,10 @@ part 'notifications_state.dart';
 
 class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  bool _permissionRequested = false;
 
-  NotificationsBloc() : super(const NotificationsState());
+  NotificationsBloc() : super(const NotificationsState()) {
+    on<NotificationStatusChanged>(_notificationsStatusChanged);
+  }
 
   static Future<void> initializeFCM() async {
     await Firebase.initializeApp(
@@ -19,25 +20,21 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     );
   }
 
+  void _notificationsStatusChanged(
+      NotificationStatusChanged event, Emitter<NotificationsState> emit) {
+    emit(state.copywith(status: event.status));
+  }
+
   void requestPermission() async {
-    if (!_permissionRequested) {
-      _permissionRequested = true;
-      try {
-        NotificationSettings settings = await messaging.requestPermission(
-          alert: true,
-          announcement: false,
-          badge: true,
-          carPlay: false,
-          criticalAlert: true,
-          provisional: false,
-          sound: true,
-        );
-        emit(state.copywith(status: settings.authorizationStatus));
-      } catch (e) {
-        // Manejar si hay errores jeje...
-      } finally {
-        _permissionRequested = false;
-      }
-    }
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: true,
+      provisional: false,
+      sound: true,
+    );
+    add(NotificationStatusChanged(settings.authorizationStatus));
   }
 }
