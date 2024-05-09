@@ -12,6 +12,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
 
   NotificationsBloc() : super(const NotificationsState()) {
     on<NotificationStatusChanged>(_notificationsStatusChanged);
+    _checkPermissionFcM();
   }
 
   static Future<void> initializeFCM() async {
@@ -23,6 +24,20 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
   void _notificationsStatusChanged(
       NotificationStatusChanged event, Emitter<NotificationsState> emit) {
     emit(state.copywith(status: event.status));
+    _getFcmToken();
+  }
+
+  void _checkPermissionFcM() async {
+    final setting = await messaging.getNotificationSettings();
+    add(NotificationStatusChanged(setting.authorizationStatus));
+  }
+
+  void _getFcmToken() async {
+    final setting = await messaging.getNotificationSettings();
+    if (setting.authorizationStatus != AuthorizationStatus.authorized) return;
+    final token = await messaging.getToken();
+
+    print(token);
   }
 
   void requestPermission() async {
