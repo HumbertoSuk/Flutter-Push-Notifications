@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_push_notification/config/routers/routers.dart';
 import 'package:flutter_push_notification/config/theme/theme.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_push_notification/presentation/providers/head_provider.d
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationsBloc.initializeFCM();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(HeadProvider.initProvider(mainAppWidget: const MainApp()));
 }
 
