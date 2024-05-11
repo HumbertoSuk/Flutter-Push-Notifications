@@ -7,11 +7,14 @@ class NotificationsState extends Equatable {
       {this.status = AuthorizationStatus.notDetermined,
       this.notifications = const []});
 
-  NotificationsState copywith(
-          {AuthorizationStatus? status, List<dynamic>? notifications}) =>
+  NotificationsState copyWith({
+    AuthorizationStatus? status,
+    List<dynamic>? notifications,
+  }) =>
       NotificationsState(
-          status: status ?? this.status,
-          notifications: notifications ?? this.notifications);
-  @override
+        status: status ?? this.status,
+        notifications: notifications ?? this.notifications,
+      );
+
   List<Object> get props => [status, notifications];
 }

@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_push_notification/firebase_options.dart';
+import 'package:flutter_push_notification/models/push_message.dart';
 
 part 'notifications_event.dart';
 part 'notifications_state.dart';
@@ -18,7 +21,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
 
   NotificationsBloc() : super(const NotificationsState()) {
     on<NotificationStatusChanged>(_notificationsStatusChanged);
-    _checkPermissionFcM();
+    _checkPermissionFCM();
     _onForegroundMessage();
   }
 
@@ -30,31 +33,61 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
 
   void _notificationsStatusChanged(
       NotificationStatusChanged event, Emitter<NotificationsState> emit) {
-    emit(state.copywith(status: event.status));
+    emit(state.copyWith(status: event.status));
     _getFcmToken();
   }
 
-  void _handleRemorteMessage(RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
-    print('Message data: ${message.data}');
-
+  void _handleRemoteMessage(RemoteMessage message) {
     if (message.notification != null) {
-      print('Message also contained a notification: ${message.notification}');
+      final notification = mapRemoteMessageToEntity(message);
+      print(notification.toString());
+    } else {
+      print("Received a data-only message: ${message.data}");
     }
   }
 
-  void _onForegroundMessage() {
-    FirebaseMessaging.onMessage.listen(_handleRemorteMessage);
+  PushMessage mapRemoteMessageToEntity(RemoteMessage message) {
+    return PushMessage(
+      messageId: mapMessageId(message.messageId),
+      title: message.notification?.title ?? '',
+      body: message.notification?.body ?? '',
+      sentDate: message.sentTime ?? DateTime.now(),
+      data: message.data,
+      imageUrl: _getImageUrl(message.notification),
+    );
   }
 
-  void _checkPermissionFcM() async {
-    final setting = await messaging.getNotificationSettings();
-    add(NotificationStatusChanged(setting.authorizationStatus));
+  String mapMessageId(String? messageId) {
+    return messageId?.replaceAll(':', '')?.replaceAll('%', '') ?? '';
+  }
+
+  String? _getImageUrl(RemoteNotification? notification) {
+    if (notification == null) return null;
+    return Platform.isAndroid
+        ? notification.android?.imageUrl
+        : notification.apple?.imageUrl;
+  }
+
+  void _onForegroundMessage() {
+    FirebaseMessaging.onMessage.listen(_handleRemoteMessage);
+  }
+
+  void _checkPermissionFCM() async {
+    final settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: true,
+      provisional: false,
+      sound: true,
+    );
+    add(NotificationStatusChanged(settings.authorizationStatus));
   }
 
   void _getFcmToken() async {
-    final setting = await messaging.getNotificationSettings();
-    if (setting.authorizationStatus != AuthorizationStatus.authorized) return;
+    final settings = await messaging.getNotificationSettings();
+    if (settings.authorizationStatus != AuthorizationStatus.authorized) return;
     final token = await messaging.getToken();
 
     print(token);
